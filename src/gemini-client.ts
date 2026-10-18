@@ -269,7 +269,8 @@ Answer directly to the question in GitHub-flavored markdown. If suggesting code,
     }
 
     private async generateWithFallback(prompt: string, isJson: boolean): Promise<string> {
-        const modelsToTry = [this.model, 'gemini-2.5-flash', 'gemini-2.0-flash']
+        const candidates = [this.model, 'gemini-3.8-flash', 'gemini-3.1-flash-lite']
+        const modelsToTry = candidates.filter((m, i) => candidates.indexOf(m) === i)
         let lastError: Error | undefined
 
         for (const modelName of modelsToTry) {

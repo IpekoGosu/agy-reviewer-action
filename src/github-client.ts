@@ -175,17 +175,70 @@ export class GithubClient {
             }
         })
 
-        const response = await this.octokit.rest.pulls.createReview({
-            owner: this.owner,
-            repo: this.repo,
-            pull_number: prNumber,
-            commit_id: commitId,
-            event: 'COMMENT',
-            body,
-            comments: formattedComments.length > 0 ? formattedComments : undefined,
-        })
+        try {
+            const response = await this.octokit.rest.pulls.createReview({
+                owner: this.owner,
+                repo: this.repo,
+                pull_number: prNumber,
+                commit_id: commitId,
+                event: 'COMMENT',
+                body,
+                comments: formattedComments.length > 0 ? formattedComments : undefined,
+            })
 
-        return response.data.id
+            return response.data.id
+        } catch (error: any) {
+            console.warn('Batch review submission failed, attempting individual comments fallback:', error?.message)
+            // Fallback 1: Create top-level review body first
+            const reviewResponse = await this.octokit.rest.pulls.createReview({
+                owner: this.owner,
+                repo: this.repo,
+                pull_number: prNumber,
+                commit_id: commitId,
+                event: 'COMMENT',
+                body,
+            })
+            const reviewId = reviewResponse.data.id
+
+            // Fallback 2: Try creating comments individually against the review
+            const failedComments: typeof formattedComments = []
+            for (const comment of formattedComments) {
+                try {
+                    await this.octokit.rest.pulls.createReviewComment({
+                        owner: this.owner,
+                        repo: this.repo,
+                        pull_number: prNumber,
+                        commit_id: commitId,
+                        body: comment.body,
+                        path: comment.path,
+                        line: comment.line,
+                        start_line: comment.start_line,
+                        side: comment.side,
+                        start_side: comment.start_side,
+                    })
+                } catch {
+                    failedComments.push(comment)
+                }
+            }
+
+            // Fallback 3: If any comments failed line resolution, append them to the review body so they are not lost!
+            if (failedComments.length > 0) {
+                let updatedBody = body + '\n\n---\n### 📝 추가 피드백 (Diff 라인 외 영역)\n'
+                for (const fc of failedComments) {
+                    updatedBody += `\n<details><summary><b>${fc.path}:${fc.line}</b></summary>\n\n${fc.body}\n</details>\n`
+                }
+                await this.octokit.rest.pulls.updateReview({
+                    owner: this.owner,
+                    repo: this.repo,
+                    pull_number: prNumber,
+                    review_id: reviewId,
+                    body: updatedBody,
+                })
+            }
+
+            return reviewId
+        }
+
     }
 
     public async updateReview(prNumber: number, reviewId: number, body: string): Promise<void> {

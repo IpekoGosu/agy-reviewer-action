@@ -25,7 +25,7 @@ interface RawReviewResponse {
 }
 
 interface RawReReviewResponse {
-    readonly resolvedIssueTitles?: readonly string[]
+    readonly resolvedThreadIds?: readonly string[]
     readonly summary?: string
     readonly confidenceScore?: number
     readonly checklist?: readonly RawChecklistItem[]
@@ -134,11 +134,11 @@ Return your response strictly in the following JSON format:
         readonly updatedAnalysis: ReviewAnalysis
     }> {
         const unresolvedList = unresolvedThreadContexts.map(
-            (t, index) => `Thread #${index + 1} (ID: ${t.id}, File: ${t.path}):\n${t.body}`
+            (t, index) => `Thread #${index + 1} (Thread ID: "${t.id}", File: ${t.path}):\n${t.body}`
         ).join('\n\n---\n\n')
 
         const prompt = `You are AGY Code Reviewer evaluating updated changes in a pull request.
-Review the latest diff to verify if previously reported issues have been addressed, and identify any new issues introduced.
+Review the latest diff to verify if previously reported issues in existing unresolved threads have been addressed.
 
 ${projectRules}
 
@@ -161,33 +161,30 @@ ${prContext.diff.length > 70000 ? `${prContext.diff.slice(0, 70000)}\n... (diff 
 ### Directives:
 1. 언어 원칙 (MANDATORY):
    - 갱신된 요약(summary), 체크리스트 항목 및 설명, 신규 인라인 지적사항의 제목과 문제 설명 등 모든 텍스트는 **반드시 100% 유려하고 전문적인 한국어(Korean)**로 작성하십시오.
+2. 스레드 자동 해결 (Resolve Thread MANDATORY):
+   - 'Existing Unresolved Threads' 목록의 각 스레드에 대해, 최신 PR Diff에서 해당 문제가 수정/해결되었는지 면밀히 검토하십시오.
+   - 문제가 수정되었거나 더 이상 유효하지 않은 경우, **해당 스레드의 Thread ID 문자열(예: "PRRT_...")을 'resolvedThreadIds' 배열에 반드시 포함**하십시오!
+   - GitHub Actions가 이 ID들을 바탕으로 GitHub GraphQL resolveReviewThread를 실행하여 해당 코멘트 스레드를 자동으로 'Resolved' 처리합니다.
+3. 신뢰도 점수 (Confidence Score):
+   - 모든 주요 지적사항이 해결되었고 추가 결함이 없으면 5/5점을 부여하십시오.
 
 Return your response strictly in the following JSON format:
 {
-  "resolvedThreadIds": ["PRRT_example1", "PRRT_example2"],
+  "resolvedThreadIds": ["PRRT_kwDO..."],
   "summary": "이전 피드백 반영 사항 및 현재 PR 상태에 대한 상세한 한국어 요약 (마크다운)",
   "confidenceScore": 5,
   "checklist": [
     { "title": "타입 안전성", "passed": true, "note": "모든 타입 위반 사항 해결 완료" }
   ],
-  "newInlineComments": [
-    {
-      "path": "path/to/file.ts",
-      "line": 50,
-      "severity": "P2",
-      "title": "신규 이슈 제목 (한국어)",
-      "problem": "신규 도입된 문제에 대한 한국어 설명",
-      "suggestion": "수정 코드 제안"
-    }
-  ]
+  "newInlineComments": []
 }`
 
         const text = await this.generateWithFallback(prompt, true)
         const parsed = JSON.parse(text) as RawReReviewResponse
 
         const resolvedThreadIds: string[] = []
-        if (parsed.resolvedIssueTitles) {
-            for (const item of parsed.resolvedIssueTitles) {
+        if (parsed.resolvedThreadIds) {
+            for (const item of parsed.resolvedThreadIds) {
                 if (typeof item === 'string') {
                     resolvedThreadIds.push(item)
                 }

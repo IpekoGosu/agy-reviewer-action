@@ -114,18 +114,7 @@ Return your response strictly in the following JSON format:
   ]
 }`
 
-        const response = await this.ai.models.generateContent({
-            model: this.model,
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                thinkingConfig: {
-                    thinkingLevel: this.thinkingLevel,
-                },
-            },
-        })
-
-        const text = response.text?.trim() ?? '{}'
+        const text = await this.generateWithFallback(prompt, true)
         const parsed = JSON.parse(text) as RawReviewResponse
         return this.normalizeReviewResponse(parsed)
     }
@@ -187,18 +176,7 @@ Return your response strictly in the following JSON format:
   ]
 }`
 
-        const response = await this.ai.models.generateContent({
-            model: this.model,
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                thinkingConfig: {
-                    thinkingLevel: this.thinkingLevel,
-                },
-            },
-        })
-
-        const text = response.text?.trim() ?? '{}'
+        const text = await this.generateWithFallback(prompt, true)
         const parsed = JSON.parse(text) as RawReReviewResponse
 
         const resolvedThreadIds: string[] = []
@@ -254,17 +232,8 @@ ${question}
 
 Answer in GitHub-flavored markdown. If referencing code, provide exact snippets. Keep it polite, direct, and constructive.`
 
-        const response = await this.ai.models.generateContent({
-            model: this.model,
-            contents: prompt,
-            config: {
-                thinkingConfig: {
-                    thinkingLevel: this.thinkingLevel,
-                },
-            },
-        })
-
-        return response.text?.trim() ?? 'I was unable to generate a response at this time.'
+        const text = await this.generateWithFallback(prompt, false)
+        return text || 'I was unable to generate a response at this time.'
     }
 
     public async answerInlineQuestion(
@@ -295,17 +264,52 @@ ${question}
 
 Answer directly to the question in GitHub-flavored markdown. If suggesting code, provide a markdown code block.`
 
-        const response = await this.ai.models.generateContent({
-            model: this.model,
-            contents: prompt,
-            config: {
-                thinkingConfig: {
-                    thinkingLevel: this.thinkingLevel,
-                },
-            },
-        })
+        const text = await this.generateWithFallback(prompt, false)
+        return text || 'I was unable to generate an inline response at this time.'
+    }
 
-        return response.text?.trim() ?? 'I was unable to generate an inline response at this time.'
+    private async generateWithFallback(prompt: string, isJson: boolean): Promise<string> {
+        const modelsToTry = [this.model, 'gemini-2.5-flash', 'gemini-2.0-flash']
+        let lastError: Error | undefined
+
+        for (const modelName of modelsToTry) {
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try {
+                    const response = await this.ai.models.generateContent({
+                        model: modelName,
+                        contents: prompt,
+                        config: {
+                            responseMimeType: isJson ? 'application/json' : undefined,
+                            thinkingConfig: {
+                                thinkingLevel: this.thinkingLevel,
+                            },
+                        },
+                    })
+                    const text = response.text?.trim()
+                    if (text) {
+                        return text
+                    }
+                } catch (error) {
+                    lastError = error instanceof Error ? error : new Error(String(error))
+                    const msg = lastError.message.toLowerCase()
+                    const isRetryable = (
+                        msg.includes('503') ||
+                        msg.includes('429') ||
+                        msg.includes('high demand') ||
+                        msg.includes('unavailable') ||
+                        msg.includes('resource_exhausted')
+                    )
+
+                    if (!isRetryable) {
+                        break
+                    }
+
+                    await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)))
+                }
+            }
+        }
+
+        throw lastError ?? new Error('Failed to generate content from Gemini models.')
     }
 
     private normalizeReviewResponse(raw: RawReviewResponse): ReviewAnalysis {

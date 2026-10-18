@@ -236,19 +236,25 @@ export class GithubClient {
     }
 
     public async resolveReviewThread(threadId: string): Promise<boolean> {
-        const mutation = `
-            mutation($threadId: ID!) {
-                resolveReviewThread(input: { threadId: $threadId }) {
-                    thread {
-                        id
-                        isResolved
+        try {
+            const mutation = `
+                mutation($threadId: ID!) {
+                    resolveReviewThread(input: { threadId: $threadId }) {
+                        thread {
+                            id
+                            isResolved
+                        }
                     }
                 }
-            }
-        `
+            `
 
-        const response: GraphQLResolveResponse = await this.octokit.graphql(mutation, { threadId })
-        return response.resolveReviewThread?.thread?.isResolved ?? false
+            const response: GraphQLResolveResponse = await this.octokit.graphql(mutation, { threadId })
+            return response.resolveReviewThread?.thread?.isResolved ?? false
+        } catch (error) {
+            // Non-fatal: logged if GitHub App has not yet been granted Contents: write permission
+            console.warn(`Could not resolve review thread ${threadId}:`, error)
+            return false
+        }
     }
 
     public async createComment(issueNumber: number, body: string): Promise<number> {

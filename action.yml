@@ -1,0 +1,41 @@
+name: 'AGY Code Reviewer'
+description: 'Autonomous AI code reviewer and conversational PR assistant powered by Gemini 3.8 Flash High.'
+author: 'Mahjong Sensei Contributors'
+
+inputs:
+  gemini-api-key:
+    description: 'Google Gemini API Key from Google AI Studio'
+    required: true
+  model:
+    description: 'Gemini model identifier'
+    required: false
+    default: 'gemini-3.8-flash'
+  thinking-level:
+    description: 'Reasoning depth (LOW, MEDIUM, HIGH)'
+    required: false
+    default: 'HIGH'
+  app-id:
+    description: 'GitHub App ID for bot identity'
+    required: false
+  private-key:
+    description: 'GitHub App Private Key (.pem content)'
+    required: false
+  github-token:
+    description: 'GitHub token (alternative to App ID & Private Key)'
+    required: false
+  bot-name:
+    description: 'Name of the bot account'
+    required: false
+    default: 'agy-reviewer-ksw'
+  bot-mention:
+    description: 'Primary mention trigger for chat'
+    required: false
+    default: '@agy-reviewer-ksw'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+
+branding:
+  icon: 'check-circle'
+  color: 'purple'

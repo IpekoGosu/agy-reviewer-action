@@ -1,4 +1,5 @@
 import { GoogleGenAI, ThinkingLevel } from '@google/genai'
+import { jsonrepair } from 'jsonrepair'
 import { ActionConfig, InlineCommentFinding, ReviewAnalysis } from './types.js'
 
 interface RawInlineFinding {
@@ -117,7 +118,12 @@ Return your response strictly in the following JSON format:
 }`
 
         const text = await this.generateWithFallback(prompt, true)
-        const parsed = JSON.parse(text) as RawReviewResponse
+        const parsed = this.safeParseJson<RawReviewResponse>(text, {
+            summary: '코드 리뷰 분석을 완료하였으나 형식 오류로 인해 기본 요약을 제공합니다.',
+            confidenceScore: 3,
+            checklist: [],
+            inlineComments: [],
+        })
         return this.normalizeReviewResponse(parsed)
     }
 
@@ -180,7 +186,13 @@ Return your response strictly in the following JSON format:
 }`
 
         const text = await this.generateWithFallback(prompt, true)
-        const parsed = JSON.parse(text) as RawReReviewResponse
+        const parsed = this.safeParseJson<RawReReviewResponse>(text, {
+            resolvedThreadIds: [],
+            summary: '재검토 분석을 완료했습니다.',
+            confidenceScore: 3,
+            checklist: [],
+            newInlineComments: [],
+        })
 
         const resolvedThreadIds: string[] = []
         if (parsed.resolvedThreadIds) {
@@ -358,6 +370,30 @@ ${question}
             confidenceScore,
             checklist,
             inlineComments,
+        }
+    }
+
+    private safeParseJson<T>(text: string, fallback: T): T {
+        let raw = text.trim()
+        if (raw.startsWith('```')) {
+            raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+        }
+        const firstBrace = raw.indexOf('{')
+        const lastBrace = raw.lastIndexOf('}')
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            raw = raw.substring(firstBrace, lastBrace + 1)
+        }
+
+        try {
+            return JSON.parse(raw) as T
+        } catch {
+            try {
+                const repaired = jsonrepair(raw)
+                return JSON.parse(repaired) as T
+            } catch (repairError) {
+                console.warn('Failed to parse or repair JSON from model:', repairError, '\nRaw text:\n', text)
+                return fallback
+            }
         }
     }
 }

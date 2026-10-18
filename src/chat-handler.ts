@@ -47,6 +47,10 @@ export class ChatHandler {
         if (isReviewCommand) {
             await this.reviewerEngine.runReview(prNumber, true)
             await this.githubClient.addReaction(commentId, false, 'rocket')
+            await this.githubClient.createComment(
+                prNumber,
+                '🔄 **AGY Reviewer**: PR 재검토를 완료했습니다. 상단 리뷰 요약 및 인라인 코멘트를 확인해 주세요.'
+            )
             return
         }
 
@@ -117,13 +121,18 @@ export class ChatHandler {
 
     private isReviewCommand(text: string): boolean {
         const lower = text.toLowerCase()
-        return (
+        const isSlashCommand = (
             lower.startsWith('/review') ||
             lower.startsWith('/re-review') ||
-            lower.startsWith('/rereview') ||
-            lower.includes('re-review') ||
-            (this.isBotMentioned(text) && (lower.includes('review') || lower.includes('재리뷰')))
+            lower.startsWith('/rereview')
         )
+        const isMentionedReview = this.isBotMentioned(text) && (
+            lower.includes('review') ||
+            lower.includes('re-review') ||
+            lower.includes('재리뷰')
+        )
+
+        return isSlashCommand || isMentionedReview
     }
 
     private stripMentions(text: string): string {

@@ -49,7 +49,11 @@ async function run(): Promise<void> {
 
         const botName = core.getInput('bot-name') || 'agy-reviewer-ksw'
         const rawMention = core.getInput('bot-mention') || '@agy-reviewer-ksw'
-        const botMentions = [rawMention, '@AGY', `@${botName}`]
+        const parsedMentions = rawMention
+            .split(',')
+            .map((m) => m.trim())
+            .filter((m) => m.length > 0)
+        const botMentions = Array.from(new Set([...parsedMentions, '@AGY', `@${botName}`]))
 
         const config: ActionConfig = {
             geminiApiKey,

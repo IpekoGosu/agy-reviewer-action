@@ -65,7 +65,7 @@ export class ReviewerEngine {
 
     private async performReReview(
         prNumber: number,
-        pr: { readonly title: string; readonly body: string },
+        pr: { readonly title: string; readonly body: string; readonly headRefOid: string },
         diff: string,
         botReview: ExistingReview,
         projectRules: string
@@ -89,6 +89,18 @@ export class ReviewerEngine {
             await this.githubClient.resolveReviewThread(threadId)
         }
 
+        if (reReviewResult.updatedAnalysis.inlineComments.length > 0) {
+            const comments = reReviewResult.updatedAnalysis.inlineComments.map((finding) => ({
+                path: finding.path,
+                line: finding.line,
+                start_line: finding.startLine,
+                side: 'RIGHT' as const,
+                start_side: finding.startLine ? ('RIGHT' as const) : undefined,
+                body: this.formatInlineComment(finding),
+            }))
+            await this.githubClient.createReview(prNumber, pr.headRefOid, '', comments)
+        }
+
         const updatedBody = this.formatReviewBody(reReviewResult.updatedAnalysis)
         await this.githubClient.updateReview(prNumber, botReview.id, updatedBody)
     }
@@ -96,7 +108,7 @@ export class ReviewerEngine {
     private findBotReview(reviews: readonly ExistingReview[]): ExistingReview | undefined {
         for (let i = reviews.length - 1; i >= 0; i--) {
             const review = reviews[i]
-            if (review.body.includes('## 🤖 AGY Code Review') || review.body.includes(this.botName)) {
+            if (review.body && (review.body.includes('## 🤖 AGY Code Review') || review.body.includes(this.botName))) {
                 return review
             }
         }

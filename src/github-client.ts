@@ -60,7 +60,7 @@ export class GithubClient {
         if (options.appId && options.privateKey) {
             const auth = createAppAuth({
                 appId: options.appId,
-                privateKey: options.privateKey,
+                privateKey: options.privateKey.replace(/\\n/g, '\n'),
             })
 
             // Authenticate as GitHub App to find installation for repository
@@ -133,12 +133,13 @@ export class GithubClient {
             owner: this.owner,
             repo: this.repo,
             pull_number: prNumber,
+            per_page: 100,
         })
 
         return response.data.map((review) => ({
             id: review.id,
             nodeId: review.node_id,
-            body: review.body,
+            body: review.body ?? '',
             commitId: review.commit_id ?? '',
         }))
     }
@@ -187,8 +188,9 @@ export class GithubClient {
             })
 
             return response.data.id
-        } catch (error: any) {
-            console.warn('Batch review submission failed, attempting individual comments fallback:', error?.message)
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            console.warn('Batch review submission failed, attempting individual comments fallback:', errorMessage)
             // Fallback 1: Create top-level review body first
             const reviewResponse = await this.octokit.rest.pulls.createReview({
                 owner: this.owner,

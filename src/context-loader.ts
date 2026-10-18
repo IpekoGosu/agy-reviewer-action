@@ -5,12 +5,15 @@ export class ContextLoader {
     private readonly workspaceRoot: string
     private readonly candidateFiles: readonly string[] = [
         'AGENTS.md',
-        'docs/coding-conventions.md',
-        'docs/mahjong-domain.md',
-        'docs/architecture.md',
         'CONVENTIONS.md',
         'RULES.md',
         'CLAUDE.md',
+        '.gemini/styleguide.md',
+        '.cursorrules',
+        'docs/coding-conventions.md',
+        'docs/architecture.md',
+        'docs/domain.md',
+        'docs/mahjong-domain.md',
     ]
 
     public constructor(workspaceRoot: string) {

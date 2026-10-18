@@ -5,7 +5,8 @@
     "type": "module",
     "main": "dist/index.js",
     "scripts": {
-        "build": "ncc build src/index.ts -o dist --minify"
+        "build": "ncc build src/index.ts -o dist --minify",
+        "typecheck": "tsc --noEmit"
     },
     "keywords": [
         "github-action",

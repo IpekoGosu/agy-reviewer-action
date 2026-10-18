@@ -113,12 +113,12 @@ export class ReviewerEngine {
 
         return `## 🤖 AGY Code Review
 
-### 📋 PR Summary
+### 📋 PR 요약 (Summary)
 ${analysis.summary}
 
 ---
 
-### 🎯 Confidence Score: \`${analysis.confidenceScore}/5\`
+### 🎯 신뢰도 점수 (Confidence Score): \`${analysis.confidenceScore}/5\`
 > **산정 기준**:
 > - 5/5: 컨벤션 및 도메인 규칙을 엄격히 준수하며 잠재적 결함이 전혀 없음.
 > - 4/5: 전반적으로 우수하며 마이너한 P2/P3 개선 제안이 존재함.
@@ -126,7 +126,7 @@ ${analysis.summary}
 
 ---
 
-### 📏 Code Quality & Convention Checklist
+### 📏 코드 품질 및 컨벤션 검증 체크리스트
 | 검사 항목 | 상태 | 비고 |
 | :--- | :---: | :--- |
 ${checklistRows}
@@ -137,10 +137,10 @@ ${analysis.inlineComments.length > 0 ? '> 💡 **상세 지적사항은 코드 �
 
     private formatInlineComment(finding: InlineCommentFinding): string {
         const severityIcon = finding.severity === 'P1'
-            ? '🔴 P1 (Critical)'
+            ? '🔴 P1 (Critical - 블로킹 결함)'
             : finding.severity === 'P2'
-                ? '🟡 P2 (Major)'
-                : '🟢 P3 (Minor)'
+                ? '🟡 P2 (Major - 주요 개선)'
+                : '🟢 P3 (Minor - 권장 사항)'
 
         let result = `### ${severityIcon}: ${finding.title}
 

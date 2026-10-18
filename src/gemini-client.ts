@@ -77,29 +77,31 @@ ${prContext.diff.length > 70000 ? `${prContext.diff.slice(0, 70000)}\n... (diff 
 ---
 
 ### Review Directives:
-1. Review Thoroughness:
+1. 언어 원칙 (MANDATORY):
+   - 요약(summary), 체크리스트 항목 및 설명(checklist), 인라인 지적사항의 제목(title)과 문제 설명(problem), 수정 제안(suggestion) 등 모든 텍스트는 **반드시 100% 유려하고 전문적인 한국어(Korean)**로 작성하십시오. 영어로 작성하지 마십시오.
+2. Review Thoroughness:
    - Check against ALL Project-Specific Coding Standards and Domain Rules provided above.
    - Categorize issues by severity:
-     - P1 (Critical): Security vulnerabilities, fatal crashes, data loss, breaking invariant/domain logic, strict typing violation (any/unknown).
-     - P2 (Major): Architecture violations, formatting/convention violations, performance anti-patterns, resource leaks, broken links.
-     - P3 (Minor): Documentation mismatch, naming improvements, minor refactoring suggestions.
-2. Inline Comments Precision:
+     - P1 (Critical): 보안 취약점, 런타임 크래시, 데이터 손실, 불변성/도메인 규칙 파괴, 타입 안정성 위반(any/unknown).
+     - P2 (Major): 아키텍처 위반, 포맷팅/컨벤션 위반(들여쓰기, 세미콜론 등), 성능 안티패턴, 리소스 누수, 링크 깨짐.
+     - P3 (Minor): 문서/주석 불일치, 네이밍 개선, 마이너 리팩토링 제안.
+3. Inline Comments Precision:
    - Only place inline comments on lines modified in the diff (+ lines).
    - Provide exact file 'path' and right-side 'line' number.
    - For suggestions, provide a clear markdown code block with the fix.
-3. Confidence Score:
+4. Confidence Score:
    - Calculate an honest confidence score from 1 to 5.
-   - 5/5: Flawless, adheres strictly to all conventions, zero unresolved P1/P2/P3 issues.
-   - 4/5: High quality, minor P2/P3 suggestions only.
-   - 1-3/5: Contains blocking P1 bugs or critical convention violations.
+   - 5/5: 컨벤션과 도메인 규칙을 완벽히 준수하며 미해결 P1/P2/P3 이슈가 없음.
+   - 4/5: 전반적으로 우수하며 마이너한 P2/P3 제안만 있음.
+   - 1-3/5: 블로킹 P1 버그나 주요 컨벤션 위반이 존재함.
 
 Return your response strictly in the following JSON format:
 {
-  "summary": "High-level summary of changes and architecture impact (markdown)",
+  "summary": "한국어로 작성된 변경사항 및 아키텍처 영향 요약 (마크다운)",
   "confidenceScore": 4,
   "checklist": [
-    { "title": "Type Safety", "passed": true, "note": "Zero any/unknown detected" },
-    { "title": "Conventions & Formatting", "passed": false, "note": "Found semicolons or formatting issues" }
+    { "title": "타입 안전성", "passed": true, "note": "any/unknown 타입 사용 없음" },
+    { "title": "코딩 컨벤션 및 포맷팅", "passed": false, "note": "들여쓰기 4칸 규칙 위반 확인" }
   ],
   "inlineComments": [
     {
@@ -107,9 +109,9 @@ Return your response strictly in the following JSON format:
       "line": 42,
       "startLine": 40,
       "severity": "P1",
-      "title": "Strict typing violation",
-      "problem": "Detailed explanation of the issue",
-      "suggestion": "Exact replacement code suggestion"
+      "title": "타입 안전성 위반 (한국어)",
+      "problem": "문제 원인 및 현상에 대한 상세한 한국어 설명",
+      "suggestion": "정확한 수정 코드"
     }
   ]
 }`
@@ -156,22 +158,26 @@ ${prContext.diff.length > 70000 ? `${prContext.diff.slice(0, 70000)}\n... (diff 
 
 ---
 
+### Directives:
+1. 언어 원칙 (MANDATORY):
+   - 갱신된 요약(summary), 체크리스트 항목 및 설명, 신규 인라인 지적사항의 제목과 문제 설명 등 모든 텍스트는 **반드시 100% 유려하고 전문적인 한국어(Korean)**로 작성하십시오.
+
 Return your response strictly in the following JSON format:
 {
   "resolvedThreadIds": ["PRRT_example1", "PRRT_example2"],
-  "summary": "Updated markdown summary highlighting what was fixed and current PR status",
+  "summary": "이전 피드백 반영 사항 및 현재 PR 상태에 대한 상세한 한국어 요약 (마크다운)",
   "confidenceScore": 5,
   "checklist": [
-    { "title": "Type Safety", "passed": true, "note": "All strict type violations resolved" }
+    { "title": "타입 안전성", "passed": true, "note": "모든 타입 위반 사항 해결 완료" }
   ],
   "newInlineComments": [
     {
       "path": "path/to/file.ts",
       "line": 50,
       "severity": "P2",
-      "title": "New issue description",
-      "problem": "Explanation of newly introduced issue",
-      "suggestion": "Replacement code suggestion"
+      "title": "신규 이슈 제목 (한국어)",
+      "problem": "신규 도입된 문제에 대한 한국어 설명",
+      "suggestion": "수정 코드 제안"
     }
   ]
 }`
@@ -230,10 +236,12 @@ ${prContext.diff.length > 50000 ? `${prContext.diff.slice(0, 50000)}\n... (diff 
 ### User Question:
 ${question}
 
-Answer in GitHub-flavored markdown. If referencing code, provide exact snippets. Keep it polite, direct, and constructive.`
+### Directives:
+- 반드시 자연스럽고 친절하며 전문적인 한국어(Korean)로 답변하십시오.
+- 코드를 언급할 때는 마크다운 코드 블록을 제공하십시오.`
 
         const text = await this.generateWithFallback(prompt, false)
-        return text || 'I was unable to generate a response at this time.'
+        return text || '현재 답변을 생성할 수 없습니다.'
     }
 
     public async answerInlineQuestion(
@@ -262,10 +270,12 @@ ${threadContext.comments.join('\n\n---\n\n')}
 ### Latest Contributor Message:
 ${question}
 
-Answer directly to the question in GitHub-flavored markdown. If suggesting code, provide a markdown code block.`
+### Directives:
+- 반드시 자연스럽고 명확한 한국어(Korean)로 답변하십시오.
+- 수정 코드를 제시할 때는 \`\`\`suggestion 또는 마크다운 코드 블록으로 작성하십시오.`
 
         const text = await this.generateWithFallback(prompt, false)
-        return text || 'I was unable to generate an inline response at this time.'
+        return text || '현재 답변을 생성할 수 없습니다.'
     }
 
     private async generateWithFallback(prompt: string, isJson: boolean): Promise<string> {
@@ -314,13 +324,13 @@ Answer directly to the question in GitHub-flavored markdown. If suggesting code,
     }
 
     private normalizeReviewResponse(raw: RawReviewResponse): ReviewAnalysis {
-        const summary = raw.summary ?? 'No summary provided.'
+        const summary = raw.summary ?? '요약이 제공되지 않았습니다.'
         const confidenceScore = typeof raw.confidenceScore === 'number'
             ? Math.max(1, Math.min(5, Math.round(raw.confidenceScore)))
             : 3
 
         const checklist = (raw.checklist ?? []).map((item) => ({
-            title: item.title ?? 'Check',
+            title: item.title ?? '검증 항목',
             passed: item.passed ?? false,
             note: item.note ?? '',
         }))
@@ -339,7 +349,7 @@ Answer directly to the question in GitHub-flavored markdown. If suggesting code,
                         ? item.startLine
                         : undefined,
                     severity,
-                    title: item.title ?? 'Review finding',
+                    title: item.title ?? '코드 리뷰 의견',
                     problem: item.problem ?? '',
                     suggestion: item.suggestion,
                 })
